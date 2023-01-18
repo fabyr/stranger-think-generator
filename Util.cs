@@ -13,6 +13,15 @@ namespace StrangerThinkGenerator
             return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
 
+        public static float Gaussian(this Random rand, float mean = 0, float stdDev = 1)
+        {
+            float u1 = rand.NextSingle();
+            float u2 = rand.NextSingle();
+            float randStdNormal = MathF.Sqrt(-2f * MathF.Log(u1)) * MathF.Sin(2f * MathF.PI * u2);
+            //Console.WriteLine(randStdNormal);
+            return mean + stdDev * randStdNormal;
+        }
+
         public static float VecAngleSigned(Vector3F a, Vector3F b, Vector3F n)
         {
             float angle = MathF.Acos(Vector3F.Dot(a.Normalized, b.Normalized));
@@ -84,7 +93,12 @@ namespace StrangerThinkGenerator
             }
         }
 
-        public static Vector2F? LSegsIntersectionPoint(float p0_x, float p0_y, float p1_x, float p1_y, 
+        public static float Lerp(float firstFloat, float secondFloat, float by)
+        {
+            return firstFloat * (1 - by) + secondFloat * by;
+        }
+
+        public static Vector2F? LSegsIntersectionPoint(float p0_x, float p0_y, float p1_x, float p1_y,
                                                        float p2_x, float p2_y, float p3_x, float p3_y)
         {
             float s1_x, s1_y, s2_x, s2_y;
@@ -93,7 +107,7 @@ namespace StrangerThinkGenerator
 
             float s, t;
             s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
-            t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+            t = (s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
 
             if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
             {

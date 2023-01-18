@@ -122,7 +122,20 @@ namespace StrangerThinkGenerator
 
         public static float Distance(Vector3F a, Vector3F b)
         {
-            return MathF.Sqrt(a.X * b.X + a.Y * b.Y + a.Z * b.Z);
+            float dx = b.X - a.X;
+            float dy = b.Y - a.Y;
+            float dz = b.Z - a.Z;
+            return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+        }
+
+        public static Vector3F Lerp(Vector3F a, Vector3F b, float t)
+        {
+            return new Vector3F()
+            {
+                X = Util.Lerp(a.X, b.X, t),
+                Y = Util.Lerp(a.Y, b.Y, t),
+                Z = Util.Lerp(a.Z, b.Z, t)
+            };
         }
     }
 }

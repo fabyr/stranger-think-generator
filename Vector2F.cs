@@ -9,6 +9,16 @@ namespace StrangerThinkGenerator
 
         public float X, Y;
 
+        public float Magnitude => MathF.Sqrt(X * X + Y * Y);
+        public Vector2F Normalized
+        {
+            get
+            {
+                float m = Magnitude;
+                return new Vector2F(X / m, Y / m);
+            }
+        }
+
         public Vector2F(float x, float y)
         {
             X = x;
@@ -71,9 +81,29 @@ namespace StrangerThinkGenerator
             };
         }
 
+        public static Vector2F operator +(Vector2F a, Vector2F b)
+        {
+            return new Vector2F()
+            {
+                X = a.X + b.X,
+                Y = a.Y + b.Y
+            };
+        }
+
+        public static Vector2F operator -(Vector2F a, Vector2F b)
+        {
+            return new Vector2F()
+            {
+                X = a.X - b.X,
+                Y = a.Y - b.Y
+            };
+        }
+
         public static float Distance(Vector2F a, Vector2F b)
         {
-            return MathF.Sqrt(a.X * b.X + a.Y * b.Y);
+            float dx = b.X - a.X;
+            float dy = b.Y - a.Y;
+            return MathF.Sqrt(dx * dx + dy * dy);
         }
     }
 }

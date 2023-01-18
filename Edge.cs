@@ -7,6 +7,12 @@ namespace StrangerThinkGenerator
     {
         public Vector3F A, B;
 
+        public Edge(Vector3F a, Vector3F b)
+        {
+            A = a;
+            B = b;
+        }
+
         public override string ToString()
         {
             return $"Edge[{A}, {B}]";

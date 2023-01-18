@@ -90,5 +90,78 @@ namespace StrangerThinkGenerator
             }
             return result;
         }
+
+        // https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+        // https://stackoverflow.com/a/23806710
+
+        private static float InvF(int i, int j, Matrix m){
+
+            int o = 2+(j-i);
+
+            i += 4+o;
+            j += 4-o;
+
+            Func<int, int, float> e = (a, b) => m[((i+a)%4), ((j+b)%4)];
+            
+            float inv =
+            + e(+1,-1)*e(+0,+0)*e(-1,+1)
+            + e(+1,+1)*e(+0,-1)*e(-1,+0)
+            + e(-1,-1)*e(+1,+0)*e(+0,+1)
+            - e(-1,-1)*e(+0,+0)*e(+1,+1)
+            - e(-1,+1)*e(+0,-1)*e(+1,+0)
+            - e(+1,-1)*e(-1,+0)*e(+0,+1);
+
+            return (o % 2 != 0) ? inv : -inv;
+        }
+
+        public Matrix? Inverse4x4()
+        {
+            if(Width != 4 || Height != 4)
+                throw new InvalidOperationException("This method can only be called on a 4x4 matrix.");
+            Matrix inv = new Matrix(4, 4);
+
+            for(int i=0;i<4;i++)
+                for(int j=0;j<4;j++)
+                    inv[i, j] = InvF(i,j,this);
+
+            float D = 0;
+
+            for(int k=0;k<4;k++) D += this[k, 0] * inv[0, k];
+
+            if (D == 0) return null;
+
+            D = 1.0f / D;
+
+            for (int j = 0; j < 4; j++)
+                for (int i = 0; i < 4; i++)
+                    inv[i, j] = inv[i, j] * D;
+
+            return inv;
+
+        }
+
+        public static Matrix RotationMatrix4x4(Vector3F eulerAngles)
+        {
+            float Sx    = MathF.Sin(eulerAngles.X * Util.Deg2Rad);
+            float Sy    = MathF.Sin(eulerAngles.Y * Util.Deg2Rad);
+            float Sz    = MathF.Sin(eulerAngles.Z * Util.Deg2Rad);
+            float Cx    = MathF.Cos(eulerAngles.X * Util.Deg2Rad);
+            float Cy    = MathF.Cos(eulerAngles.Y * Util.Deg2Rad);
+            float Cz    = MathF.Cos(eulerAngles.Z * Util.Deg2Rad);
+            Matrix m = new Matrix(4, 4);
+
+            m[0, 0] = Cy*Cz;
+            m[1, 0] = -Cy*Sz;
+            m[2, 0] = Sy;
+            m[0, 1] = Cz*Sx*Sy+Cx*Sz;
+            m[1, 1] = Cx*Cz-Sx*Sy*Sz;
+            m[2, 1] = -Cy*Sx;
+            m[0, 2] = -Cx*Cz*Sy+Sx*Sz;
+            m[1, 2] = Cz*Sx+Cx*Sy*Sz;
+            m[2, 2] = Cx*Cy;
+            
+            m[3, 3] = 1;
+            return m;
+        }
     }
 }
