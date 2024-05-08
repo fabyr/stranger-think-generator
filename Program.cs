@@ -15,7 +15,7 @@ namespace StrangerThinkGenerator
             const string outputDir = "frames";
 
             bool[,] pattern = new bool[w, h];
-            using (Image<Rgba32> image = Image.Load("pattern10.png").CloneAs<Rgba32>())
+            using (Image<Rgba32> image = Image.Load("pattern.png").CloneAs<Rgba32>())
             {
                 image.Mutate(x => x.Resize(w, h));
                 for (int y = 0; y < h; y++)

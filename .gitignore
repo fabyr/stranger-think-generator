@@ -1,5 +1,7 @@
 bin/
 obj/
 frames/
+# all pattern files except just "pattern.png"
 pattern*.png
+!pattern.png
 output.*
