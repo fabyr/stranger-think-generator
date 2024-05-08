@@ -1,5 +1,6 @@
 ﻿using System;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Diagnostics;
 
@@ -22,17 +23,18 @@ namespace StrangerThinkGenerator
             Console.WriteLine(string.Join(", ", d));
             return;*/
 
-            const int w = 600, h = 600;
+            const int w = 1280, h = 720;
 
             bool[,] pattern = new bool[w, h];
-            using(Image<Rgba32> image = (Image<Rgba32>)Image<Rgba32>.Load("pattern.png"))
+            using(Image<Rgba32> image = (Image<Rgba32>)Image<Rgba32>.Load("pattern9.png"))
             {
+                image.Mutate(x => x.Resize(w, h));
                 for(int y = 0; y < h; y++)
                 {
                     for(int x = 0; x < w; x++)
                     {
                         Rgba32 c = image[x, y];
-                        pattern[x, y] = c.A > 128f;
+                        pattern[x, y] = (c.R + c.G + c.B) / 3f > 128f;
                     }
                 }
             }
@@ -41,10 +43,13 @@ namespace StrangerThinkGenerator
             gen.Pattern = pattern;
             gen.Setup();
             gen.PatternProcess();
+            
+            const float tzero = 0.8f;
+            const float stiffness = 2;
             using(Image<Rgba32> image = new Image<Rgba32>(w, h))
             {
-                const int images = 120;
-                const int fps = 120;
+                const int images = 230;
+                const int fps = 200;
                 for(int i = 0; i < images; i++)
                 {
                     System.Console.WriteLine($"#{i}");
@@ -52,7 +57,9 @@ namespace StrangerThinkGenerator
                     gen.SetMatrices(time, image.Width, image.Height);
                     if(i == 0)
                         gen.CalcPattern();
-                    gen.LerpPattern((MathF.Pow(time, 3f)) * 2f);
+                    float ltime = time >= tzero ? 1 : -MathF.Pow((time - tzero - (1/stiffness)) * stiffness, -3);
+                    //System.Console.WriteLine(ltime);
+                    gen.LerpPattern(ltime, ltime);
                     gen.RenderFrame(image);
                     //System.Console.WriteLine($"{i} - {gen._fovCurrent}");
                     image.SaveAsPng($"anim/{i}.png");

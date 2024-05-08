@@ -22,6 +22,10 @@ namespace StrangerThinkGenerator
 
         public Vector3F Point(float t)
         {
+            if(t < 0)
+                t = 0;
+            if(t > 1)
+                t = 1;
             Vector3F ab = Vector3F.Lerp(a, b, t);
             Vector3F bc = Vector3F.Lerp(b, c, t);
             Vector3F cd = Vector3F.Lerp(c, d, t);

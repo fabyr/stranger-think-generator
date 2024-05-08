@@ -9,30 +9,31 @@ namespace StrangerThinkGenerator
 {
     public class Generator
     {
-        public string Text { get; set; } = "Stranger\nThink";
+        public int PointCount { get; set; } = 5000;
 
-        public int PointCount { get; set; } = 1000;
-
-        public float ClosestNeighborCount { get; set; } = 2;
+        public float ClosestNeighborCount { get; set; } = 3;
 
         public Color Background { get; set; } = new Color(0, 0, 0);
         public Color LineColor { get; set; } = new Color(255, 0, 0);
 
-        public Vector3F BoundingBoxMin { get; set; } = new Vector3F(-10, -10, -10);
-        public Vector3F BoundingBoxMax { get; set; } = new Vector3F(10, 10, 10);
+        public Vector3F BoundingBoxMin { get; set; } = new Vector3F(-15, -5, -20);
+        public Vector3F BoundingBoxMax { get; set; } = new Vector3F(20, 3, 1000);
         
         private Vector3F[]? _vertices;
         private Vector3F[]? _verticesMapped;
         private Vector3F[]? _verticesDestination;
         private List<Tuple<int, int>> _edgeTable = new List<Tuple<int, int>>();
-        private List<Tuple<int, int>> _edgeTableCurrent = new List<Tuple<int, int>>();
+        private List<Edge> _edgeTableCurrent = new List<Edge>();
+        private List<Tuple<int, int>> _edgeTableDest = new List<Tuple<int, int>>();
         private Random? _rnd;
 
-        public Vector3F CameraPos { get; set; } = new Vector3F(0, 0, -15);
+        public Vector3F CameraPos { get; set; } = new Vector3F(4.2f, 14, -15);
         private Vector3F _camRotCurrent;
         private Vector3F _camPosCurrent;
         public float _fovCurrent;
-        public Vector3F CameraRotation { get; set; } = new Vector3F(0, 0, 0);
+        public Vector3F CameraRotation { get; set; } = new Vector3F(29.3f, -3, -28);
+
+        public float MaxPatternConnectDistance { get; set; } = 0.33f;
 
         public Bezier[] CameraPath { get; set; } = new Bezier[]
         {
@@ -52,7 +53,7 @@ namespace StrangerThinkGenerator
         public float NearClipPlane { get; set; } = 0.01f;
         public float FarClipPlane { get; set; } = 2000f;
 
-        private Matrix _cam2world_translate, _cam2world_rot, _cam_clip_mat, _screen_mat;
+        private Matrix _cam2world_translate, _cam2world_rot, inv_cam2world_rot, inv_cam2world_translate, _cam_clip_mat, _screen_mat;
         private float _verticalFieldOfView;
 
         public Generator()
@@ -60,35 +61,35 @@ namespace StrangerThinkGenerator
 
         public void Setup(int seed = 133769420)
         {
-            /*_edgeTable.Clear();
-            _vertices = new Vector3F[8];
-            _vertices[0] = new Vector3F(-1, -1, -1);
-            _vertices[1] = new Vector3F(1, -1, -1);
-            _vertices[2] = new Vector3F(1, 1, -1);
-            _vertices[3] = new Vector3F(-1, 1, -1);
-
-            _vertices[4] = new Vector3F(-1, -1, 1);
-            _vertices[5] = new Vector3F(1, -1, 1);
-            _vertices[6] = new Vector3F(1, 1, 1);
-            _vertices[7] = new Vector3F(-1, 1, 1);
-
-            _edgeTable.Add(new Edge() { A = _vertices[0], B = _vertices[1] });
-            _edgeTable.Add(new Edge() { A = _vertices[1], B = _vertices[2] });
-            _edgeTable.Add(new Edge() { A = _vertices[2], B = _vertices[3] });
-            _edgeTable.Add(new Edge() { A = _vertices[3], B = _vertices[0] });
-
-            _edgeTable.Add(new Edge() { A = _vertices[4], B = _vertices[5] });
-            _edgeTable.Add(new Edge() { A = _vertices[5], B = _vertices[6] });
-            _edgeTable.Add(new Edge() { A = _vertices[6], B = _vertices[7] });
-            _edgeTable.Add(new Edge() { A = _vertices[7], B = _vertices[4] });
-
-            _edgeTable.Add(new Edge() { A = _vertices[0], B = _vertices[4] });
-            _edgeTable.Add(new Edge() { A = _vertices[1], B = _vertices[5] });
-            _edgeTable.Add(new Edge() { A = _vertices[2], B = _vertices[6] });
-            _edgeTable.Add(new Edge() { A = _vertices[3], B = _vertices[7] });*/
-
             _edgeTable.Clear();
             _edgeTableCurrent.Clear();
+            _edgeTableDest.Clear();
+            /*Vector3F[] vertices2 = new Vector3F[8];
+            vertices2[0] = new Vector3F(-10, -10, -10);
+            vertices2[1] = new Vector3F(10, -10, -10);
+            vertices2[2] = new Vector3F(10, 10, -10);
+            vertices2[3] = new Vector3F(-10, 10, -10);
+
+            vertices2[4] = new Vector3F(-10, -10, 10);
+            vertices2[5] = new Vector3F(10, -10, 10);
+            vertices2[6] = new Vector3F(10, 10, 10);
+            vertices2[7] = new Vector3F(-10, 10, 10);
+
+            _edgeTable.Add(Tuple.Create(0, 1));
+            _edgeTable.Add(Tuple.Create(1, 2));
+            _edgeTable.Add(Tuple.Create(2, 3));
+            _edgeTable.Add(Tuple.Create(3, 0));
+
+            _edgeTable.Add(Tuple.Create(4, 5));
+            _edgeTable.Add(Tuple.Create(5, 6));
+            _edgeTable.Add(Tuple.Create(6, 7));
+            _edgeTable.Add(Tuple.Create(7, 4));
+
+            _edgeTable.Add(Tuple.Create(0, 4));
+            _edgeTable.Add(Tuple.Create(1, 5));
+            _edgeTable.Add(Tuple.Create(2, 6));
+            _edgeTable.Add(Tuple.Create(3, 7));*/
+            
             _rnd = new Random(seed);
             Func<float, float, float> gen = (min, max) => 
             {
@@ -96,7 +97,9 @@ namespace StrangerThinkGenerator
                 while((g = _rnd.Gaussian()) < -1 || g > 1);
                 return Util.Map(g, -1, 1, min, max);
             };
+            //int offset = vertices2.Length;
             _vertices = new Vector3F[PointCount];
+            //Array.Copy(vertices2, _vertices, offset);
             for(int i = 0; i < PointCount; i++)
             {
                 _vertices[i].X = gen(BoundingBoxMin.X, BoundingBoxMax.X);
@@ -104,10 +107,10 @@ namespace StrangerThinkGenerator
                 _vertices[i].Z = gen(BoundingBoxMin.Z, BoundingBoxMax.Z);
             }
 
-            bool[] visited = new bool[PointCount];
+            bool[] visited = new bool[_vertices.Length];
             List<Tuple<Vector3F, int>> buffer = new List<Tuple<Vector3F, int>>();
             Tuple<Vector3F, int>? pointOfInterest = null;
-            for(int i = 0; i < PointCount; i++)
+            for(int i = 0; i < _vertices.Length; i++)
             {
                 pointOfInterest = Tuple.Create(_vertices[i], i);
                 visited[i] = true;
@@ -135,7 +138,15 @@ namespace StrangerThinkGenerator
 
             _verticesMapped = new Vector3F[_vertices.Length];
             _verticesDestination = new Vector3F[_vertices.Length];
-            _edgeTableCurrent.AddRange(_edgeTable);
+            _edgeTableCurrent.AddRange(_edgeTable.Select(x => IndicesToEdge(x.Item1, x.Item2)));
+            _edgeTableDest.AddRange(_edgeTable);
+        }
+
+        private Edge IndicesToEdge(int a, int b)
+        {
+            if(_verticesMapped == null)
+                throw new InvalidOperationException("Uninitialized vertex table");
+            return new Edge(_verticesMapped[a], _verticesMapped[b]);
         }
 
         public bool[,]? Pattern { get; set; } = null;
@@ -150,14 +161,15 @@ namespace StrangerThinkGenerator
             _patternPts.Clear();
             _patternMass = new Vector2F(0, 0);
             float w = Pattern.GetLength(0), h = Pattern.GetLength(1);
+            float divAspect = MathF.Max(w, h);
             for(int y = 0; y < h; y++)
             {
                 for(int x = 0; x < w; x++)
                 {
                     if(Pattern[x, y])
                     {
-                        _patternMass += new Vector2F(x / w, y / h);
-                        _patternPts.Add(new Vector2F(x / w, y / h));
+                        _patternMass += new Vector2F(x / divAspect, y / divAspect);
+                        _patternPts.Add(new Vector2F(x / divAspect, y / divAspect));
                     }
                 }
             }
@@ -170,7 +182,7 @@ namespace StrangerThinkGenerator
             }
         }
 
-        public void LerpPattern(float percentage)
+        public void LerpPattern(float percentage, float edgePercentage)
         {
             if(_verticesMapped == null || _vertices == null || _verticesDestination == null)
                     throw new InvalidOperationException("Pattern has not yet been processed.");
@@ -180,8 +192,24 @@ namespace StrangerThinkGenerator
             {
                 if(percentage > 1)
                     percentage = 1;
+                if(percentage < 0)
+                    percentage = 0;
+                if(edgePercentage > 1)
+                    edgePercentage = 1;
+                if(edgePercentage < 0)
+                    edgePercentage = 0;
                 for(int k = 0; k < _vertices.Length; k++)
                     _verticesMapped[k] = Vector3F.Lerp(_vertices[k], _verticesDestination[k], percentage);
+                _edgeTableCurrent.Clear();
+                for(int k = 0; k < _edgeTable.Count; k++)
+                {
+                    Edge a = IndicesToEdge(_edgeTable[k].Item1, _edgeTable[k].Item2);
+                    Edge b = IndicesToEdge(_edgeTableDest[k].Item1, _edgeTableDest[k].Item2);
+                    _edgeTableCurrent.Add(new Edge(
+                        Vector3F.Lerp(a.A, b.A, edgePercentage),
+                        Vector3F.Lerp(a.B, b.B, edgePercentage)
+                    ));
+                }
             }
         }
 
@@ -199,9 +227,7 @@ namespace StrangerThinkGenerator
         {
             if(_verticesDestination == null)
                 throw new Exception();
-            Matrix rMat = Matrix.RotationMatrix4x4(new Vector3F(0, 0, 0));
-
-            
+                
             nearest -= _patternMass;
             Vector3F vec = new Vector3F(nearest.X, nearest.Y * -1, 0);
             
@@ -210,11 +236,12 @@ namespace StrangerThinkGenerator
             m[1, 0] = vec.Y;
             m[2, 0] = vec.Z;
             m[3, 0] = 1;
-            m = Matrix.Multiply(m, rMat);
+            m = Matrix.Multiply(m, inv_cam2world_rot);
+            //m = Matrix.Multiply(m, inv_cam2world_translate);
             vec = new Vector3F(m[0, 0], m[1, 0], m[2, 0]);
             
             vec *= 30f;
-            vec += new Vector3F(0, 0, 0);
+            vec += new Vector3F(5, 0, 0);
             _verticesDestination[which] = vec;
             //System.Console.WriteLine(vec);
         }
@@ -310,16 +337,15 @@ namespace StrangerThinkGenerator
             _calcPatternVisited[kk] = true;
             CalcPatternVertex(kk, _calcPatternCondensedPts[kk]);
             CalcPatternBranchRecursive(kk, kk);
-
-            const float maxDistance = 1f;
-            _edgeTableCurrent.Clear();
-            _edgeTableCurrent.AddRange(_edgeTable);
+            
+            _edgeTableDest.Clear();
+            _edgeTableDest.AddRange(_edgeTable);
             for(int w = 0; w < _edgeTable.Count; w++)
             {
                 var t = _edgeTable[w];
-                if(_verticesDestination[t.Item1].DistanceTo(_verticesDestination[t.Item2]) > maxDistance)
+                if(_verticesDestination[t.Item1].DistanceTo(_verticesDestination[t.Item2]) > MaxPatternConnectDistance)
                 {
-                    _edgeTableCurrent[w] = Tuple.Create(_edgeTableCurrent[w].Item1, _edgeTableCurrent[w].Item1);
+                    _edgeTableDest[w] = Tuple.Create(_edgeTableDest[w].Item1, _edgeTableDest[w].Item1);
                 }
             }
             
@@ -424,9 +450,25 @@ namespace StrangerThinkGenerator
             _camRotCurrent = CameraRotation;
             _camPosCurrent = CameraPos;
             _fovCurrent = FieldOfView;
-            int i = (int)(time * CameraPath.Length);
-            float bezierTime = (time - i) * (float)CameraPath.Length;
-            _camPosCurrent += CameraPath[i % CameraPath.Length].Point(bezierTime);
+            //int i = (int)(time * CameraPath.Length);
+            float bezierTime = time * (float)CameraPath.Length;
+            int bezierTimeI = (int)(bezierTime);
+            if(bezierTimeI >= CameraPath.Length)
+                bezierTimeI = CameraPath.Length - 1;
+            //System.Console.WriteLine($"{bezierTimeI} - {bezierTime - bezierTimeI}");
+            _camPosCurrent += CameraPath[bezierTimeI].Point(bezierTime - bezierTimeI);
+
+            float cConst = time * MathF.PI * 2f;
+            float cSin = MathF.Sin(cConst);
+            float cCos = MathF.Cos(cConst);
+            float fSin = MathF.Abs(cSin);
+
+            const float rad = 30f;
+
+            _camPosCurrent.X += cCos * rad;
+            _camPosCurrent.Z += cSin * rad;
+            //_camPosCurrent.Y += MathF.Abs(cSin) * 400f;
+
             //Console.WriteLine(_camPosCurrent);
             //camRot.X = MathF.Sin(time * MathF.PI) * 180f;
             //_camRotCurrent.Z += (time * MathF.PI * 2f) * Util.Rad2Deg * 0.13f;
@@ -489,6 +531,9 @@ namespace StrangerThinkGenerator
             _screen_mat[3, 3] = 1;
             _screen_mat[0, 3] = imageWidth / 2;
             _screen_mat[1, 3] = imageHeight / 2;
+
+            inv_cam2world_translate = _cam2world_translate.Inverse4x4() ?? throw new Exception("Failed to build inverse matrix.");
+            inv_cam2world_rot = _cam2world_rot.Inverse4x4() ?? throw new Exception("Failed to build inverse matrix.");
         }
 
         public void RenderFrame(Image<Rgba32> image)
@@ -501,7 +546,7 @@ namespace StrangerThinkGenerator
             Vector3F one = new Vector3F(0, 0, 1);
             List<Tuple<Vector2F, Vector2F>> ptsl = new List<Tuple<Vector2F, Vector2F>>();
             //System.Console.WriteLine(string.Join(", ", _edgeTable));
-            foreach(Edge e in _edgeTableCurrent.Select(x => new Edge(_verticesMapped[x.Item1], _verticesMapped[x.Item2]))/*.Take(150)*/)
+            foreach(Edge e in _edgeTableCurrent/*.Take(150)*/)
             {
                 Vector2F projectedA, projectedB;
                 Vector3F pA3d, pB3d;
