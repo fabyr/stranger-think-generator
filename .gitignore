@@ -1,4 +1,5 @@
 bin/
 obj/
-anim/
+frames/
 pattern*.png
+output.*

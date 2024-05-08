@@ -14,19 +14,19 @@ namespace StrangerThinkGenerator
             G = g;
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             return $"Color[{R}, {G}, {B}]";
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
-            if(obj != null && obj is Color c)
+            if (obj != null && obj is Color c)
                 return c.R == R && c.G == G && c.B == B;
             return false;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             unchecked
             {

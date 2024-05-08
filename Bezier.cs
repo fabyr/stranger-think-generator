@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace StrangerThinkGenerator
 {
@@ -15,16 +14,16 @@ namespace StrangerThinkGenerator
             this.d = d;
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             return $"Bezier[{a}, {b}, {c}, {d}]";
         }
 
-        public Vector3F Point(float t)
+        public readonly Vector3F Point(float t)
         {
-            if(t < 0)
+            if (t < 0)
                 t = 0;
-            if(t > 1)
+            if (t > 1)
                 t = 1;
             Vector3F ab = Vector3F.Lerp(a, b, t);
             Vector3F bc = Vector3F.Lerp(b, c, t);

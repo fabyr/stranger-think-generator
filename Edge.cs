@@ -18,9 +18,9 @@ namespace StrangerThinkGenerator
             return $"Edge[{A}, {B}]";
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
-            if(obj != null && obj is Edge e)
+            if (obj != null && obj is Edge e)
                 return e.A == A && e.B == B;
             return false;
         }
